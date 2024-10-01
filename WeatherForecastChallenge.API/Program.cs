@@ -1,12 +1,14 @@
-using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using WeatherForecastChallenge.API.Extension;
 using WeatherForecastChallenge.Infrastructure.Data;
 using System.Reflection;
+using WeatherForecastChallenge.Infrastructure.Extension;
+using WeatherForecastChallenge.Infrastructure.Auth;
+using WeatherForecastChallenge.Application.Commands.UserCommands.Login;
+using WeatherForecastChallenge.Application.Commands.UserCommands.Register;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -57,6 +59,14 @@ builder.Services.AddSwaggerGen(c =>
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
+
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<LoginCommand>();
+    cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>();
+});
+
+builder.Services.AddScoped<ITokenServices, TokenServices>();
 
 var app = builder.Build();
 
