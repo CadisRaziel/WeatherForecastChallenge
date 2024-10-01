@@ -1,14 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using WeatherForecastChallenge.API.Extension;
-using WeatherForecastChallenge.Application.Response;
+using WeatherForecastChallenge.Application.Commands.UserCommands.Login;
+using WeatherForecastChallenge.Application.Commands.UserCommands.Register;
 using WeatherForecastChallenge.Core.Entities;
+using WeatherForecastChallenge.Core.Response;
+using WeatherForecastChallenge.Infrastructure.Auth;
+using WeatherForecastChallenge.Infrastructure.Extension;
 
 namespace WeatherForecastChallenge.API.Controllers
 {
@@ -16,15 +15,11 @@ namespace WeatherForecastChallenge.API.Controllers
     [ApiController]
     public class AuthController : MainController
     {
-        private readonly SignInManager<IdentityUser> _signInManager; 
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly AppSettings _appSettings;
+        private readonly IMediator _mediator;
 
-        public AuthController(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, IOptions<AppSettings> appSettings)
+        public AuthController(IMediator mediator)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
-            _appSettings = appSettings.Value;
+            _mediator = mediator;
         }
 
         /// <summary>
@@ -33,33 +28,30 @@ namespace WeatherForecastChallenge.API.Controllers
         /// <param name="userRegistry"></param>
         /// <returns>It will return a Data with the AccessToken and the expiration time</returns>
         [HttpPost("Register")]
-        [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]     
+        [ProducesResponseType(typeof(UserLoginResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult> Register(UserRegistry userRegistry)
-        {           
+        {
             if (!ModelState.IsValid)
                 return CustomResponse(ModelState);
-           
-            var user = new IdentityUser
+
+            var command = new RegisterCommand
             {
-                UserName = userRegistry.Email, 
                 Email = userRegistry.Email,
-                EmailConfirmed = true 
+                Password = userRegistry.Password
             };
-          
-            var result = await _userManager.CreateAsync(user: user, password: userRegistry.Password);
 
-            if (result.Succeeded)
+            try
             {
-                return CustomResponse(await GenerateJwt(userRegistry.Email)); 
+                var response = await _mediator.Send(command);
+                return CustomResponse(response);
             }
-            
-            foreach (var error in result.Errors)
+            catch (Exception ex)
             {
-                AddProcessingError(error.Description); 
+                AddProcessingError(ex.Message);
+                return CustomResponse();
             }
-
-            return CustomResponse();
         }
+
 
 
         /// <summary>
@@ -73,104 +65,23 @@ namespace WeatherForecastChallenge.API.Controllers
         {
             if (!ModelState.IsValid)
                 return CustomResponse(ModelState);
-                      
-            var result = await _signInManager.PasswordSignInAsync(userName: userLogin.Email, password: userLogin.Password, isPersistent: false, lockoutOnFailure: true);
 
-            if (result.Succeeded)
-                return CustomResponse(await GenerateJwt(userLogin.Email)); 
-            
-            if (result.IsLockedOut)
+            var command = new LoginCommand
             {
-                AddProcessingError("Usuario temporariamente bloqueado por tentativas invalidas.");
+                Email = userLogin.Email,
+                Password = userLogin.Password
+            };
+
+            try
+            {
+                var response = await _mediator.Send(command);
+                return CustomResponse(response);
+            }
+            catch (Exception ex)
+            {
+                AddProcessingError(ex.Message);
                 return CustomResponse();
             }
-
-            AddProcessingError("Usuario ou Senha incorretos");
-
-            return CustomResponse();
         }
-        
-        private async Task<UserLoginResponse> GenerateJwt(string email)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-            var claims = await _userManager.GetClaimsAsync(user);
-
-
-            var identityClaims = await GetUserClaims(claims, user);
-            var encodedToken = TokenEncryption(identityClaims);
-
-            return GetTokenAnswer(encodedToken, user, claims);
-        }
-
-        private async Task<ClaimsIdentity> GetUserClaims(ICollection<Claim> claims, IdentityUser user)
-        {            
-            var userRoles = await _userManager.GetRolesAsync(user);
-                        
-            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, user.Id));
-
-            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
-            
-            claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
-
-            claims.Add(new Claim(JwtRegisteredClaimNames.Nbf, ToUnixEpochDate(DateTime.UtcNow).ToString()));
-            
-            claims.Add(new Claim(JwtRegisteredClaimNames.Iat, ToUnixEpochDate(DateTime.UtcNow).ToString(), ClaimValueTypes.Integer64));
-
-          
-            foreach (var userRole in userRoles)
-            {                
-                claims.Add(new Claim("role", userRole));
-            }
-            
-            var identityClaims = new ClaimsIdentity();
-            
-            identityClaims.AddClaims(claims);
-
-            return identityClaims;
-        }
-
-        private string TokenEncryption(ClaimsIdentity identityClaims)
-        {            
-            var tokenHandler = new JwtSecurityTokenHandler();
-           
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-            
-            var token = tokenHandler.CreateToken(new SecurityTokenDescriptor
-            {                
-                Issuer = _appSettings.Issuer,
-               
-                Audience = _appSettings.ValidOn,
-                
-                Subject = identityClaims,
-                
-                Expires = DateTime.UtcNow.AddHours(_appSettings.ExpirationHours),
-                
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            });
-
-            return tokenHandler.WriteToken(token);
-        }
-
-        private UserLoginResponse GetTokenAnswer(string encodedToken, IdentityUser user, IEnumerable<Claim> claims)
-        {
-            return new UserLoginResponse
-            {                
-                AccessToken = encodedToken,
-               
-                ExpiresIn = TimeSpan.FromHours(_appSettings.ExpirationHours).TotalSeconds,
-
-                UserToken = new UserToken
-                {                   
-                    Id = user.Id,
-                   
-                    Email = user.Email,
-                    
-                    Claims = claims.Select(c => new UserClaims { Type = c.Type, Value = c.Value })
-                }
-            };
-        }       
-            
-        private static long ToUnixEpochDate(DateTime date) => (long)Math.Round((date.ToUniversalTime() - new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)).TotalSeconds);
-       
     }
 }

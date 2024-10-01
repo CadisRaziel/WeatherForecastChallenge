@@ -20,4 +20,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\WeatherForecastChallenge.Core\WeatherForecastChallenge.Core.csproj" />
+  </ItemGroup>
+
 </Project>

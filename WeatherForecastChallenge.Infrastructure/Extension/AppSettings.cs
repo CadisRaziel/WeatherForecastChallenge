@@ -1,4 +1,4 @@
-﻿namespace WeatherForecastChallenge.API.Extension
+﻿namespace WeatherForecastChallenge.Infrastructure.Extension
 {
     public class AppSettings
     {

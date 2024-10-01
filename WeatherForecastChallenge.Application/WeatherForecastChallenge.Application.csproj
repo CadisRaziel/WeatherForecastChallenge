@@ -8,6 +8,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WeatherForecastChallenge.Core\WeatherForecastChallenge.Core.csproj" />
+    <ProjectReference Include="..\WeatherForecastChallenge.Infrastructure\WeatherForecastChallenge.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
   </ItemGroup>
 
 </Project>
