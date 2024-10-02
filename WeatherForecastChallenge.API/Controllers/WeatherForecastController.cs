@@ -1,11 +1,12 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 using WeatherForecastChallenge.Application.Query.CommandQuery;
-using WeatherForecastChallenge.Core.Entities;
 using WeatherForecastChallenge.Core.Response;
 
+
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class WeatherForecastController : ControllerBase
 {
@@ -21,7 +22,7 @@ public class WeatherForecastController : ControllerBase
     /// </summary>
     /// <param name="city"></param>
     /// <returns>Weather forecast api that fetches data from WeatherAPI and returns location - temperature - humidity - weather condition - wind speed</returns>
-    [HttpGet("{city}")]
+    [HttpGet("{city}")]    
     [ProducesResponseType(typeof(WeatherApiResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWeatherForecast(string city)
     {

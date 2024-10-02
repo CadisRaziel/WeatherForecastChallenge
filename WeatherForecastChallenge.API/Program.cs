@@ -10,6 +10,7 @@ using WeatherForecastChallenge.Infrastructure.Auth;
 using WeatherForecastChallenge.Application.Commands.UserCommands.Login;
 using WeatherForecastChallenge.Application.Commands.UserCommands.Register;
 using System.Net.Http.Headers;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -54,11 +55,39 @@ builder.Services.AddAuthentication(options =>
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
-{
-    // Defina o caminho para o arquivo XML
+{    
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+    
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "WeatherForecastChallenge", Version = "v1" });
+
+    // Configura a segurança JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Forneça o token JWT no formato 'Bearer {token}' no cabeçalho de autorização. Este token é necessário para autenticar suas requisições à API. Você pode obtê-lo ao fazer login com suas credenciais de usuário."
+    });
+
+    // Aplica a segurança a todos os endpoints
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
 });
 
 var weatherApiKey = configuration["WeatherApi:ApiKey"];
