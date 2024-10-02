@@ -9,6 +9,7 @@ using WeatherForecastChallenge.Infrastructure.Extension;
 using WeatherForecastChallenge.Infrastructure.Auth;
 using WeatherForecastChallenge.Application.Commands.UserCommands.Login;
 using WeatherForecastChallenge.Application.Commands.UserCommands.Register;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -58,6 +59,21 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+});
+
+var weatherApiKey = configuration["WeatherApi:ApiKey"];
+//builder.Services.AddHttpClient("WeatherAPI", client =>
+//{
+//    client.BaseAddress = new Uri("https://api.weatherapi.com/v1/");
+//    client.DefaultRequestHeaders.Accept.Clear();
+//    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+//    client.DefaultRequestHeaders.Add("key", weatherApiKey); 
+//});
+builder.Services.AddHttpClient("WeatherAPI", client =>
+{
+    client.BaseAddress = new Uri("https://api.weatherapi.com/v1/");
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
 
 builder.Services.AddMediatR(cfg =>
