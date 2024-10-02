@@ -62,13 +62,6 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var weatherApiKey = configuration["WeatherApi:ApiKey"];
-//builder.Services.AddHttpClient("WeatherAPI", client =>
-//{
-//    client.BaseAddress = new Uri("https://api.weatherapi.com/v1/");
-//    client.DefaultRequestHeaders.Accept.Clear();
-//    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-//    client.DefaultRequestHeaders.Add("key", weatherApiKey); 
-//});
 builder.Services.AddHttpClient("WeatherAPI", client =>
 {
     client.BaseAddress = new Uri("https://api.weatherapi.com/v1/");
