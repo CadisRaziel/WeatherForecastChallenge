@@ -31,12 +31,19 @@ namespace WeatherForecastChallenge.API.Controllers
         [HttpPost("AddFavoriteCitie")]
         [ProducesResponseType(typeof(FavoriteCityResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> AddFavoriteCity([FromBody] string cityName)
-        {
-            var userId = _userManager.GetUserId(User); 
+        {           
+            var userId = _userManager.GetUserId(User);
+            
+            if (string.IsNullOrWhiteSpace(cityName))
+            {
+                return BadRequest("O nome da cidade não pode ser vazio.");
+            }
+            
             var command = new AddFavoriteCityCommand { CityName = cityName, UserId = userId };
-
+            
             var response = await _mediator.Send(command);
-            return Ok(response); 
+          
+            return Ok(response);
         }
 
 
@@ -44,16 +51,16 @@ namespace WeatherForecastChallenge.API.Controllers
         /// Remove a city from favorites
         /// </summary>
         /// <param name="cityName"></param>
-        /// <returns>returns the name of the city and a string message of success or error</returns>
-        [HttpPost("RemoveFavoriteCities")]
+        /// <returns>Returns the name of the city and a string message of success or error</returns>
+        [HttpDelete("RemoveFavoriteCities/{cityName}")]
         [ProducesResponseType(typeof(FavoriteCityResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> RemoveFavoriteCity([FromBody] string cityName)
+        public async Task<IActionResult> RemoveFavoriteCity(string cityName)
         {
             var userId = _userManager.GetUserId(User);
             var command = new RemoveFavoriteCityCommand { CityName = cityName, UserId = userId };
 
             var response = await _mediator.Send(command);
-            return Ok(response); 
+            return Ok(response);
         }
 
 
