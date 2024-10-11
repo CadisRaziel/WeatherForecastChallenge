@@ -3,8 +3,7 @@
 ### 1. Clone o Repositório
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
-cd <NOME_DO_REPOSITORIO>
+git clone [<URL_DO_REPOSITORIO>](https://github.com/CadisRaziel/WeatherForecastChallenge/tree/develop)
 ```
 
 ### 2. Container docker
